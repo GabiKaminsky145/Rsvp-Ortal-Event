@@ -99,7 +99,7 @@ client.on("message", async (msg) => {
     }
 
     if (userMessage === "1" || userMessage === "כן" || userMessage === "מגיע") {
-        await client.sendMessage(msg.from, "\nכמה תגיעו? (רשום מספר)");
+        await client.sendMessage(msg.from, "כמה תגיעו? (רשום מספר)");
         waitingForPeople[senderId] = true;
     } else if (userMessage === "2" || userMessage === "לא") {
         await updateRSVP(senderId, "no");

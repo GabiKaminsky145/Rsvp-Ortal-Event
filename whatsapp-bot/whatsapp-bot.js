@@ -5,14 +5,13 @@ const fs = require("fs");
 
 const waitingForPeople = {};
 const userResponses = {};
-const wazeLink = "https://www.waze.com/ul/hsv8tx653k";
-const calendarLink = "https://calendar.google.com/calendar/u/0/r/eventedit?text=Wedding+of+Gabriel+and+Ortal&dates=20250604T163000Z/20250604T230000Z&details=Join+us+for+our+wedding!&location=Basico+Hall,+Nes+Ziona&pli=1";
+const wazeLink = "https://www.waze.com/he/live-map/directions/%D7%A4%D7%9C%D7%98%D7%99%D7%9F-%D7%90%D7%99%D7%A8%D7%95%D7%A2%D7%99-%D7%91%D7%95%D7%98%D7%99%D7%A7-%D7%A0%D7%A4%D7%AA%D7%9C%D7%99-%D7%A4%D7%9C%D7%98%D7%99%D7%9F-5-%D7%A8%D7%90%D7%A9%D7%95%D7%9F-%D7%9C%D7%A6%D7%99%D7%95%D7%9F?to=place.w.22806848.227871871.591958";
 
 // Generate invite message
 const generateInviteMessage = (guestName) => {
     const nameToUse = guestName ? guestName : "אורח";
     return `שלום, ${nameToUse}\n` +
-        " הוזמנתם לחתונה של גבריאל ואורטל שתערך באולם באסיקו נס ציונה בתאריך 04.06.25💍\n" +
+        " שמחחה לזמינך להפרשת חלה שתערך בתאריך 20.05.25\n" +
         "בחר אחת מהאפשרויות והקלד מספר (לדוגמא: השב 1 )\n" +
         "1️⃣ מגיע/ה\n" +
         "2️⃣ לא מגיע/ה\n" +
@@ -21,8 +20,11 @@ const generateInviteMessage = (guestName) => {
 
 const sendMessageWithDelay = async (chatId, guestName, category, delay) => {
     try {
-        await client.sendMessage(chatId, generateInviteMessage(guestName));
-        console.log(`📨 Sent RSVP message to ${chatId}`);
+        const media = MessageMedia.fromFilePath("./invite.jpg"); // adjust the path to your image
+        const messageText = generateInviteMessage(guestName);
+
+        await client.sendMessage(chatId, media, { caption: messageText });
+        console.log(`📨 Sent RSVP message with image to ${chatId}`);
     } catch (err) {
         console.error(`❌ Failed to send message to ${chatId}: ${err.message}`);
         await logUndeliveredMessage(chatId.replace("@c.us", ""), guestName, category);
@@ -78,15 +80,16 @@ client.on("message", async (msg) => {
     if (waitingForPeople[senderId]) {
         if (/^\d+$/.test(userMessage)) {
             const numberOfPeople = parseInt(userMessage, 10);
-            if (numberOfPeople <= 0 || numberOfPeople > 7) {
-                await client.sendMessage(msg.from, "❌ מספר אנשים לא תקין. אנא שלח מספר בין 1 ל-7.");
+            if (numberOfPeople <= 0 || numberOfPeople > 5) {
+                await client.sendMessage(msg.from, "❌ מספר אנשים לא תקין. אנא שלח מספר בין 1 ל- 5.");
                 return;
             }
             await updateRSVP(senderId, "yes", numberOfPeople);
             await client.sendMessage(msg.from,
-                `תודה רבה על הרישום!✅ \nנשמח שתחגגו איתנו 🎉\n מצורף לינק לוויז לדרך הגעה:📍\n${wazeLink}` +
-                `\n ניתן להוסיף את החתונה ליומן שלך:📅 ${calendarLink}` +
-                `\n\n במידה וישנו עדכון או שינוי\nבאפשרותכם לשנות את בחירתכם ע"י שליחת ההודעה 'התחלה'🔄`);
+                ` \nמתרגשת לראותך באירוע 🎉\n
+                \n\n נא להגיע בבגדים בהירים
+                מצורף לינק לוויז לדרך הגעה:📍\n${wazeLink}` +
+                `\n\n במידה וישנו עדכון או שינוי\nבאפשרותך לשנות את בחירתך ע"י שליחת ההודעה 'התחלה'🔄`);
             delete waitingForPeople[senderId];
             userResponses[senderId] = "yes";
         } else {
@@ -100,13 +103,13 @@ client.on("message", async (msg) => {
         waitingForPeople[senderId] = true;
     } else if (userMessage === "2" || userMessage === "לא") {
         await updateRSVP(senderId, "no");
-        await client.sendMessage(msg.from, "היינו שמחים לראותכם, אבל תודה לכם!😢" +
-            "\n באפשרותכם לשנות את בחירתכם ע\"י שליחת ההודעה 'התחלה'");
+        await client.sendMessage(msg.from, "הייתי שמחה לראותך, אבל תודה לך!😢" +
+            "\n באפשרותך לשנות את בחירתך ע\"י שליחת ההודעה 'התחלה'");
         userResponses[senderId] = "no";
     } else if (userMessage === "3" || userMessage === "אולי") {
         await updateRSVP(senderId, "maybe");
         await client.sendMessage(msg.from, "תודה על התשובה!🤔 " +
-            "\nבאפשרותכם לשנות את בחירתכם ע\"י שליחת ההודעה 'התחלה'🔄");
+            "\nבאפשרותך לשנות את בחירתך ע\"י שליחת ההודעה 'התחלה'🔄");
         userResponses[senderId] = "maybe";
     } else {
         await client.sendMessage(msg.from, "אפשרות לא קיימת❌\n\n" +

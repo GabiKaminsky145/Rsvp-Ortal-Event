@@ -19,7 +19,7 @@ console.log(process.env.DB_USER, process.env.DB_HOST, process.env.DB_NAME, proce
 // Get all guests with their category, RSVP status, and number of attendees
 const getAllRSVPs = async () => {
     try {
-        const res = await pool.query("SELECT guestname, status, category, attendees FROM rsvp-ortal");
+        const res = await pool.query("SELECT guestname, status, category, attendees FROM rsvp_ortal");
         return res.rows;
     } catch (err) {
         console.error("❌ Error fetching RSVP data:", err);
@@ -30,7 +30,7 @@ const getAllRSVPs = async () => {
 // Get guest name by phone
 const getGuestName = async (phone) => {
     try {
-        const res = await pool.query("SELECT guestname FROM rsvp-ortal WHERE phone = $1", [phone]);
+        const res = await pool.query("SELECT guestname FROM rsvp_ortal WHERE phone = $1", [phone]);
         return res.rows.length > 0 ? res.rows[0].guestname : null;
     } catch (err) {
         console.error("❌ Error fetching guest name:", err);
@@ -41,7 +41,7 @@ const getGuestName = async (phone) => {
 // Get guest category by phone
 const getCategory = async (phone) => {
     try {
-        const res = await pool.query("SELECT category FROM rsvp-ortal WHERE phone = $1", [phone]);
+        const res = await pool.query("SELECT category FROM rsvp_ortal WHERE phone = $1", [phone]);
         return res.rows.length > 0 ? res.rows[0].category : null;
     } catch (err) {
         console.error("❌ Error fetching category:", err);
@@ -52,7 +52,7 @@ const getCategory = async (phone) => {
 // Get guests with "maybe" status
 const getMaybeGuests = async () => {
     try {
-        const res = await pool.query("SELECT phone FROM rsvp-ortal WHERE status = 'maybe'");
+        const res = await pool.query("SELECT phone FROM rsvp_ortal WHERE status = 'maybe'");
         return res.rows.map(row => row.phone);
     } catch (err) {
         console.error("❌ Error fetching maybe guests:", err);
@@ -65,12 +65,12 @@ const updateRSVP = async (phone, status, attendees = 0) => {
     try {
         if (status === "yes") {
             await pool.query(
-                "UPDATE rsvp-ortal SET status = $1, attendees = $2 WHERE phone = $3",
+                "UPDATE rsvp_ortal SET status = $1, attendees = $2 WHERE phone = $3",
                 [status, attendees, phone]
             );
         } else {
             await pool.query(
-                "UPDATE rsvp-ortal SET status = $1 WHERE phone = $2",
+                "UPDATE rsvp_ortal SET status = $1 WHERE phone = $2",
                 [status, phone]
             );
         }
@@ -84,7 +84,7 @@ const updateRSVP = async (phone, status, attendees = 0) => {
 const logUndeliveredMessage = async (phone, guestname, category) => {
     try {
         await pool.query(
-            "INSERT INTO errors-ortal (phone, guestname, category) VALUES ($1, $2, $3) " +
+            "INSERT INTO errors_ortal (phone, guestname, category) VALUES ($1, $2, $3) " +
             "ON CONFLICT (phone) DO NOTHING",
             [phone, guestname, category]
         );
@@ -97,7 +97,7 @@ const logUndeliveredMessage = async (phone, guestname, category) => {
 // Get all guests who didn't receive a WhatsApp message
 const getUndeliveredMessages = async () => {
     try {
-        const res = await pool.query("SELECT * FROM errors-ortal");
+        const res = await pool.query("SELECT * FROM errors_ortal");
         return res.rows;
     } catch (err) {
         console.error("❌ Error fetching undelivered messages:", err);

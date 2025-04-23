@@ -12,7 +12,7 @@ function Dashboard() {
 
   useEffect(() => {
     axios
-      .get("http://localhost:5000/rsvp")
+      .get("https://hprsht-khlh.onrender.com/rsvp")
       .then((response) => setData(response.data))
       .catch((error) => console.error("Error fetching data:", error));
   }, []);
@@ -158,7 +158,7 @@ function UndeliveredMessages() {
 
   useEffect(() => {
     axios
-      .get("http://localhost:5000/messagesStatus")
+      .get("https://hprsht-khlh.onrender.com/messagesStatus")
       .then((response) => setUndeliveredGuests(response.data))
       .catch((error) => console.error("Error fetching undelivered data:", error));
   }, []);

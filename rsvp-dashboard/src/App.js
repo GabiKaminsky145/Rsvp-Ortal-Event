@@ -12,7 +12,7 @@ function Dashboard() {
 
   useEffect(() => {
     axios
-      .get("https://rsvp-system-1t6i.onrender.com/rsvp")
+      .get("http://localhost:5000/rsvp")
       .then((response) => setData(response.data))
       .catch((error) => console.error("Error fetching data:", error));
   }, []);
@@ -36,7 +36,7 @@ function Dashboard() {
   return (
     <Container maxWidth="lg" sx={{ marginTop: 4 }}>
       <Typography variant="h3" align="center" gutterBottom sx={{ fontSize: { xs: "2rem", md: "3rem" }, color: "#4caf50", fontWeight: 'bold' }}>
-        RSVP Status Dashboard
+        אישורי הגעה - הפרשת חלה
       </Typography>
 
       <Box display="flex" justifyContent="center" gap={3} mb={4} flexWrap="wrap">
@@ -158,7 +158,7 @@ function UndeliveredMessages() {
 
   useEffect(() => {
     axios
-      .get("https://rsvp-system-1t6i.onrender.com/messagesStatus")
+      .get("http://localhost:5000/messagesStatus")
       .then((response) => setUndeliveredGuests(response.data))
       .catch((error) => console.error("Error fetching undelivered data:", error));
   }, []);

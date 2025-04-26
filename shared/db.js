@@ -9,14 +9,16 @@ const pool = new Pool({
     password: process.env.DB_PASSWORD,
     port: process.env.DB_PORT,
     ssl: {
-        rejectUnauthorized: false, // Ensure SSL is enabled for connection
+        rejectUnauthorized: false,
     }
 });
 
 console.log(process.env.DB_USER, process.env.DB_HOST, process.env.DB_NAME, process.env.DB_PASSWORD, process.env.DB_PORT);
 
+// =========================================
+// RSVP FUNCTIONS
+// =========================================
 
-// Get all guests with their category, RSVP status, and number of attendees
 const getAllRSVPs = async () => {
     try {
         const res = await pool.query("SELECT guestname, status, category, attendees FROM rsvp_ortal");
@@ -27,7 +29,6 @@ const getAllRSVPs = async () => {
     }
 };
 
-// Get guest name by phone
 const getGuestName = async (phone) => {
     try {
         const res = await pool.query("SELECT guestname FROM rsvp_ortal WHERE phone = $1", [phone]);
@@ -38,7 +39,6 @@ const getGuestName = async (phone) => {
     }
 };
 
-// Get guest category by phone
 const getCategory = async (phone) => {
     try {
         const res = await pool.query("SELECT category FROM rsvp_ortal WHERE phone = $1", [phone]);
@@ -49,7 +49,6 @@ const getCategory = async (phone) => {
     }
 };
 
-// Get guests with "maybe" status
 const getMaybeGuests = async () => {
     try {
         const res = await pool.query("SELECT phone FROM rsvp_ortal WHERE status = 'maybe'");
@@ -60,17 +59,16 @@ const getMaybeGuests = async () => {
     }
 };
 
-// Update RSVP status and attendees
 const updateRSVP = async (phone, status, attendees = 0) => {
     try {
         if (status === "yes") {
             await pool.query(
-                "UPDATE rsvp_ortal SET status = $1, attendees = $2 WHERE phone = $3",
+                "UPDATE rsvp_ortal SET status = $1, attendees = $2, bot_active = FALSE, waiting_for_people = FALSE WHERE phone = $3",
                 [status, attendees, phone]
             );
         } else {
             await pool.query(
-                "UPDATE rsvp_ortal SET status = $1 WHERE phone = $2",
+                "UPDATE rsvp_ortal SET status = $1, bot_active = FALSE, waiting_for_people = FALSE WHERE phone = $2",
                 [status, phone]
             );
         }
@@ -80,7 +78,62 @@ const updateRSVP = async (phone, status, attendees = 0) => {
     }
 };
 
-// Log undelivered WhatsApp messages
+// =========================================
+// BOT STATE FUNCTIONS
+// =========================================
+
+// Get bot_active state
+const isBotActive = async (phone) => {
+    try {
+        const res = await pool.query("SELECT bot_active FROM rsvp_ortal WHERE phone = $1", [phone]);
+        return res.rows.length > 0 ? res.rows[0].bot_active : false;
+    } catch (err) {
+        console.error("❌ Error fetching bot_active:", err);
+        return false;
+    }
+};
+
+// Set bot_active true or false
+const setBotActive = async (phone, active) => {
+    try {
+        await pool.query(
+            "UPDATE rsvp_ortal SET bot_active = $1 WHERE phone = $2",
+            [active, phone]
+        );
+        console.log(`🔄 Set bot_active=${active} for ${phone}`);
+    } catch (err) {
+        console.error("❌ Error setting bot_active:", err);
+    }
+};
+
+// Get waiting_for_people state
+const isWaitingForPeople = async (phone) => {
+    try {
+        const res = await pool.query("SELECT waiting_for_people FROM rsvp_ortal WHERE phone = $1", [phone]);
+        return res.rows.length > 0 ? res.rows[0].waiting_for_people : false;
+    } catch (err) {
+        console.error("❌ Error fetching waiting_for_people:", err);
+        return false;
+    }
+};
+
+// Set waiting_for_people true or false
+const setWaitingForPeople = async (phone, waiting) => {
+    try {
+        await pool.query(
+            "UPDATE rsvp_ortal SET waiting_for_people = $1 WHERE phone = $2",
+            [waiting, phone]
+        );
+        console.log(`🔄 Set waiting_for_people=${waiting} for ${phone}`);
+    } catch (err) {
+        console.error("❌ Error setting waiting_for_people:", err);
+    }
+};
+
+// =========================================
+// UNDELIVERED MESSAGES FUNCTIONS
+// =========================================
+
 const logUndeliveredMessage = async (phone, guestname, category) => {
     try {
         await pool.query(
@@ -94,7 +147,6 @@ const logUndeliveredMessage = async (phone, guestname, category) => {
     }
 };
 
-// Get all guests who didn't receive a WhatsApp message
 const getUndeliveredMessages = async () => {
     try {
         const res = await pool.query("SELECT * FROM errors_ortal");
@@ -105,5 +157,21 @@ const getUndeliveredMessages = async () => {
     }
 };
 
-module.exports = { pool, getAllRSVPs, getGuestName, getMaybeGuests,
-    updateRSVP, logUndeliveredMessage, getUndeliveredMessages, getCategory };
+// =========================================
+// EXPORT FUNCTIONS
+// =========================================
+
+module.exports = {
+    pool,
+    getAllRSVPs,
+    getGuestName,
+    getMaybeGuests,
+    updateRSVP,
+    logUndeliveredMessage,
+    getUndeliveredMessages,
+    getCategory,
+    isBotActive,
+    setBotActive,
+    isWaitingForPeople,
+    setWaitingForPeople
+};

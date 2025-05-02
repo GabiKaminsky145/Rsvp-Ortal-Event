@@ -29,7 +29,6 @@ const sendMessageWithDelay = async (chatId, guestName, category, delay) => {
         await logUndeliveredMessage(chatId.replace("@c.us", ""), guestName, category);
     }
 };
-
 const sendMessagesToGuests = async (guests) => {
     const delayBetweenMessages = 3000;
     for (let phone of guests) {
@@ -38,9 +37,14 @@ const sendMessagesToGuests = async (guests) => {
         const category = await getCategory(phone);
 
         await sendMessageWithDelay(chatId, guestName, category, delayBetweenMessages);
+
+        // ✅ Set bot as active for this guest
+        await setBotActive(phone, true);
+
         await new Promise(resolve => setTimeout(resolve, delayBetweenMessages));
     }
 };
+
 
 const client = new Client({
     authStrategy: new LocalAuth(),

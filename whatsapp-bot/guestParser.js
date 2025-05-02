@@ -1,40 +1,70 @@
-const xlsx = require("xlsx");
-const pool = require("./db-demo"); // Import your db.js connection
+const xlsx = require('xlsx');
+const { Client } = require('pg');
 
-// Read the Excel file
-const workbook = xlsx.readFile("מוזמנים חתונה.xlsx"); // Update with correct file path
-const sheetName = workbook.SheetNames[0]; // Get the first sheet
+// Load Excel file
+const workbook = xlsx.readFile('הזמנות להפרשת חלה.xlsx');
+const sheetName = workbook.SheetNames[0];
 const sheet = workbook.Sheets[sheetName];
 
-// Convert sheet data to JSON
-const data = xlsx.utils.sheet_to_json(sheet, { defval: "" });
+// Parse Excel data
+const data = xlsx.utils.sheet_to_json(sheet);
 
-// Map columns to database fields
-const guests = data.map((row) => ({
-  guestname: row["שם המוזמן"] ? row["שם המוזמן"].toString().trim() : "",
-  attendees: parseInt(row["מספר מוזמנים"], 10) || 0, // Default to 0 if empty
-  phone: row["מספר פל'"] ? row["מספר פל'"].toString().trim() : "", // Ensure phone is a string
-  category: row["קירבה"] ? row["קירבה"].toString().trim() : "", // Default to empty string
-  status: "no", // Default status
+// Normalize phone number and map fields
+const normalizePhone = (phone) => {
+  const digits = String(phone).replace(/\D/g, ''); // remove non-digit characters
+  if (digits.startsWith('0')) {
+    return '972' + digits.slice(1);
+  }
+  return digits;
+};
+
+const transformed = data.map(row => ({
+  guestname: row["שם"] || '',
+  attendees: parseInt(row["כמה משתתפים"] || '0'),
+  phone: normalizePhone(row["טלפון"] || ''),
+  category: row["הערות"] || '',
+  status: 'not responded',
 }));
 
-// Insert data into PostgreSQL
-async function insertData() {
-  try {
-    for (const guest of guests) {
-      // Skip empty rows
-      if (!guest.guestname || !guest.phone) continue;
+// PostgreSQL client setup
+const client = new Client({
+  user: 'avnadmin',
+  host: 'rsvp-rsvp.k.aivencloud.com',
+  database: 'defaultdb',
+  password: 'AVNS_pFMUXfqcvum6kzDDT3S',
+  port: 20418,
+  ssl: {
+    rejectUnauthorized: false,
+  },
+});
 
-      await pool.query(
-        `INSERT INTO demo (guestname, attendees, phone, category, status) 
-         VALUES ($1, $2, $3, $4, $5)`,
-        [guest.guestname, guest.attendees, guest.phone, guest.category, guest.status]
+(async () => {
+  try {
+    await client.connect();
+
+    for (const row of transformed) {
+      await client.query(
+        `INSERT INTO rsvp_ortal (phone, guestname, status, attendees, category, bot_active, waiting_for_people)
+         VALUES ($1, $2, $3, $4, $5, FALSE, FALSE)
+         ON CONFLICT (phone) DO UPDATE SET
+           guestname = EXCLUDED.guestname,
+           status = EXCLUDED.status,
+           attendees = EXCLUDED.attendees,
+           category = EXCLUDED.category;`,
+        [
+          row.phone,
+          row.guestname,
+          row.status,
+          row.attendees,
+          row.category,
+        ]
       );
     }
-    console.log("✅ Data inserted successfully!");
-  } catch (error) {
-    console.error("❌ Error inserting data:", error);
-  }
-}
 
-insertData();
+    console.log("Data inserted (or updated) successfully into rsvp_ortal.");
+  } catch (err) {
+    console.error("Error:", err);
+  } finally {
+    await client.end();
+  }
+})();

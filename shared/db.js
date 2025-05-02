@@ -13,8 +13,6 @@ const pool = new Pool({
     }
 });
 
-console.log(process.env.DB_USER, process.env.DB_HOST, process.env.DB_NAME, process.env.DB_PASSWORD, process.env.DB_PORT);
-
 // =========================================
 // RSVP FUNCTIONS
 // =========================================
@@ -51,7 +49,7 @@ const getCategory = async (phone) => {
 
 const getMaybeGuests = async () => {
     try {
-        const res = await pool.query("SELECT phone FROM rsvp_ortal WHERE status = 'maybe'");
+        const res = await pool.query("SELECT phone FROM rsvp_ortal WHERE status = 'maybe' OR status = 'not responded'");
         return res.rows.map(row => row.phone);
     } catch (err) {
         console.error("❌ Error fetching maybe guests:", err);

@@ -1,12 +1,27 @@
 import React, { useEffect, useState } from "react";
 import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from "react-router-dom";
 import axios from "axios";
-import { Container, Box, Card, CardContent, Typography, List, ListItem, Button, Grid, Collapse } from "@mui/material";
+import {
+  Container, Box, Card, CardContent, Typography, List, ListItem,
+  Button, Grid, Collapse
+} from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 
 function Dashboard() {
-  const [data, setData] = useState({ yes: { guests: [], total: 0 }, no: { guests: [], total: 0 }, maybe: { guests: [], total: 0 } });
-  const [open, setOpen] = useState({ yes: false, no: false, maybe: false });
+  const [data, setData] = useState({
+    yes: { guests: [], total: 0 },
+    no: { guests: [], total: 0 },
+    maybe: { guests: [], total: 0 },
+    not_responded: { guests: [], total: 0 }
+  });
+
+  const [open, setOpen] = useState({
+    yes: false,
+    no: false,
+    maybe: false,
+    not_responded: false
+  });
+
   const [expanded, setExpanded] = useState(false);
   const navigate = useNavigate();
 
@@ -33,6 +48,8 @@ function Dashboard() {
     }, {});
   };
 
+  const statuses = ["yes", "no", "maybe", "not_responded"];
+
   return (
     <Container maxWidth="lg" sx={{ marginTop: 4 }}>
       <Typography variant="h3" align="center" gutterBottom sx={{ fontSize: { xs: "2rem", md: "3rem" }, color: "#4caf50", fontWeight: 'bold' }}>
@@ -40,7 +57,7 @@ function Dashboard() {
       </Typography>
 
       <Box display="flex" justifyContent="center" gap={3} mb={4} flexWrap="wrap">
-        {["yes", "no", "maybe"].map((status) => (
+        {statuses.map((status) => (
           <Card
             key={status}
             sx={{
@@ -60,7 +77,7 @@ function Dashboard() {
             }}
           >
             <Typography variant="h5" sx={{ fontSize: { xs: "1.25rem", sm: "1.5rem" }, fontWeight: 'bold' }}>
-              {status.toUpperCase()}
+              {status.toUpperCase().replace("_", " ")}
             </Typography>
             <Typography variant="h6" sx={{ fontSize: { xs: "1.1rem", sm: "1.3rem" } }}>
               {data[status].total} Attendees
@@ -70,12 +87,12 @@ function Dashboard() {
       </Box>
 
       <Grid container spacing={3}>
-        {["yes", "no", "maybe"].map((status) => (
+        {statuses.map((status) => (
           <Grid item xs={12} sm={6} md={4} key={status}>
             <Card sx={{ backgroundColor: getStatusColor(status), borderRadius: 3, boxShadow: 5 }}>
               <CardContent>
                 <Typography variant="h6" align="center" color="white" gutterBottom sx={{ fontSize: { xs: "1.5rem", sm: "1.75rem" }, fontWeight: 'bold' }}>
-                  {status.toUpperCase()} ({data[status].total})
+                  {status.toUpperCase().replace("_", " ")} ({data[status].total})
                 </Typography>
                 <Button
                   variant="contained"
@@ -85,14 +102,14 @@ function Dashboard() {
                   onClick={() => handleToggle(status)}
                   sx={{
                     mt: 2,
-                    backgroundColor: '#9c27b0', // Purple button color
-                    '&:hover': { backgroundColor: '#7b1fa2' }, // Darker purple on hover
+                    backgroundColor: '#9c27b0',
+                    '&:hover': { backgroundColor: '#7b1fa2' },
                     color: 'white',
                     borderRadius: 3,
-                    fontSize: '0.875rem', // Smaller font size for better aesthetics
-                    fontFamily: '"Roboto", "Arial", sans-serif', // Elegant font family
-                    fontWeight: '500', // Lighter font weight for a more modern look
-                    padding: '8px 16px', // Adjust padding for a balanced look
+                    fontSize: '0.875rem',
+                    fontFamily: '"Roboto", "Arial", sans-serif',
+                    fontWeight: '500',
+                    padding: '8px 16px',
                   }}
                   endIcon={<ExpandMoreIcon />}
                 >
@@ -110,13 +127,13 @@ function Dashboard() {
 
       <Box mt={4}>
         <Collapse in={expanded}>
-          {["yes", "no", "maybe"].map((status) => {
+          {statuses.map((status) => {
             if (!open[status]) return null;
             const groupedGuests = groupByCategory(data[status].guests);
             return (
               <Box key={status} mb={4}>
                 <Typography variant="h5" sx={{ color: getStatusColor(status), textAlign: "center", mb: 2, fontWeight: 'bold' }}>
-                  {status.toUpperCase()} ({data[status].total} Guests)
+                  {status.toUpperCase().replace("_", " ")} ({data[status].total} Guests)
                 </Typography>
                 <Grid container spacing={3}>
                   {Object.keys(groupedGuests).map((category, index) => (
@@ -194,8 +211,10 @@ const getStatusColor = (status) => {
       return "#f44336"; // red
     case "maybe":
       return "#ff9800"; // orange
+    case "not_responded":
+      return "#9e9e9e"; // gray
     default:
-      return "#9e9e9e"; // gray fallback
+      return "#9e9e9e"; // fallback gray
   }
 };
 
